@@ -1,0 +1,32 @@
+FROM container-registry.oracle.com/os/oraclelinux:8
+ARG RPM
+COPY ${RPM} ${RPM}
+
+# NOTE: Installing net-tools installs systemd which increases the image size significantly
+RUN dnf install -y net-tools ${RPM} && \
+    dnf clean all && \
+    rm -rf /var/cache && \
+    mkdir -p /opt/bin
+
+ADD dist/mk-docker-opts.sh /opt/bin
+RUN test -d /LICENSES || ln -s /usr/share/licenses /LICENSES
+
+FROM container-registry.oracle.com/os/oraclelinux:8-slim
+
+RUN microdnf install -y iproute iptables ca-certificates && \
+    update-ca-trust && \
+    microdnf clean all && \
+    rm -rf /var/cache && \
+    mkdir -p /opt/bin
+
+# need this part to take care of net-tools LICENSES
+COPY --from=0 /LICENSES /LICENSES
+
+# contains flannel related binary
+COPY --from=0 /opt/bin /opt/bin
+
+# net-tools binary mostly in /bin and /sbin
+COPY --from=0 /sbin /sbin
+COPY --from=0 /bin /bin
+
+ENTRYPOINT ["/opt/bin/flanneld"]
