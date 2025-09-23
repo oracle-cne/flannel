@@ -36,9 +36,9 @@ docker info
 yum clean all && yumdownloader --destdir=$(pwd) %{rpm_name}
 
 %if %{?oraclelinux} == 8
-docker build --pull --build-arg RPM=%{rpm_name}.rpm --build-arg https_proxy=${https_proxy} -t %{docker_tag} -f %{dockerfile} .
+docker build --pull=never --squash --build-arg RPM=%{rpm_name}.rpm --build-arg https_proxy=${https_proxy} -t %{docker_tag} -f %{dockerfile} .
 %else if %{?oraclelinux} == 9
-docker build --pull --network=host --build-arg RPM=%{rpm_name}.rpm --build-arg https_proxy=${https_proxy} -t %{docker_tag} -f %{dockerfile} .
+docker build --pull=never --squash --network=host --build-arg RPM=%{rpm_name}.rpm --build-arg https_proxy=${https_proxy} -t %{docker_tag} -f %{dockerfile} .
 %endif
 docker save -o %{_name}.tar %{docker_tag}
 

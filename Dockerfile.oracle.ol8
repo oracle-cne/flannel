@@ -11,11 +11,11 @@ RUN dnf install -y net-tools ${RPM} && \
 ADD dist/mk-docker-opts.sh /opt/bin
 RUN test -d /LICENSES || ln -s /usr/share/licenses /LICENSES
 
-FROM container-registry.oracle.com/os/oraclelinux:8-slim
+FROM container-registry.oracle.com/os/oraclelinux:8
 
-RUN microdnf install -y iproute iptables ca-certificates && \
+RUN dnf install -y iproute iptables ca-certificates && \
     update-ca-trust && \
-    microdnf clean all && \
+    dnf clean all && \
     rm -rf /var/cache && \
     mkdir -p /opt/bin
 
