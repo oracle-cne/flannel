@@ -60,8 +60,8 @@ export GOPATH=$(pwd)/Godeps/_workspace
 
 # see OLCNE-3381 - for some reason, FIPS doesn't like binary compiled with static flag
 #make dist/flanneld
-go build -o dist/flanneld \
-          -ldflags '-s -w -X github.com/flannel-io/flannel/version.Version=%{version} -linkmode=external -a -v'
+go build -v -trimpath=false -o dist/flanneld \
+          -ldflags '-s -w -X main.VERSION=v%{version} -X github.com/flannel-io/flannel/version.Version=%{version} -linkmode=external -a -v'
 
 %install
 install -D -p -m 755 dist/flanneld %{buildroot}/opt/bin/flanneld
