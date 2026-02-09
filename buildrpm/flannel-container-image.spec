@@ -50,5 +50,5 @@ install -p -D -m 644 %{_name}.tar %{buildroot}/usr/local/share/olcne/%{_name}.ta
 /usr/local/share/olcne/%{_name}.tar
 
 %changelog
-* Wed Sep 24 2025 Olcne-Builder Jenkins <olcne-builder_us@oracle.com> - 0.27.3-1
+* Mon Feb 09 2026 Oracle Cloud Native Environment Authors <noreply@oracle.com> - 0.27.3-1
 - Release of flannel-container-image-0.27.3-1
