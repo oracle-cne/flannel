@@ -60,7 +60,7 @@ export GOPATH=$(pwd)/Godeps/_workspace
 
 # see OLCNE-3381 - for some reason, FIPS doesn't like binary compiled with static flag
 #make dist/flanneld
-go build -v -trimpath=false -o dist/flanneld \
+go build -trimpath=false -o dist/flanneld \
           -ldflags '-s -w -X main.VERSION=v%{version} -X github.com/flannel-io/flannel/version.Version=%{version} -linkmode=external -a -v'
 
 %install
@@ -78,5 +78,5 @@ install -d -m 0755 %{buildroot}/run/%{name}/
 
 
 %changelog
-* Wed Sep 24 2025 Olcne-Builder Jenkins <olcne-builder_us@oracle.com> - 0.27.3-1
+* Mon Feb 09 2026 Oracle Cloud Native Environment Authors <noreply@oracle.com> - 0.27.3-1
 - Release of flannel-0.27.3-1
