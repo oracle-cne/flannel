@@ -170,8 +170,8 @@ report_test_failure() {
 
 	echo "Test failed; collecting cluster diagnostics"
 	kubectl get nodes -o wide || true
-	kubectl get pods -n kube-system -l "$flannel_selector" -o wide || true
-	kubectl describe pods -n kube-system -l "$flannel_selector" || true
+	kubectl get pods -n kube-flannel -l "$flannel_selector" -o wide || true
+	kubectl describe pods -n kube-flannel -l "$flannel_selector" || true
 
 	exit 1
 }
@@ -179,18 +179,18 @@ report_test_failure() {
 trap report_test_failure ERR
 
 test_started=true
-expected_flannel_pod_count=$(kubectl get pods -n kube-system -l "$flannel_selector" --no-headers 2>/dev/null | wc -l)
+expected_flannel_pod_count=$(kubectl get pods -n kube-flannel -l "$flannel_selector" --no-headers 2>/dev/null | wc -l)
 
 if [ "$expected_flannel_pod_count" -eq 0 ]; then
-	echo "No flannel pods found in kube-system"
+	echo "No flannel pods found in kube-flannel"
 	exit 1
 fi
 
-kubectl delete pod -n kube-system -l "$flannel_selector"
+kubectl delete pod -n kube-flannel -l "$flannel_selector"
 
 for _ in $(seq 1 24); do
 	ready_flannel_pods=$(
-		kubectl get pods -n kube-system -l "$flannel_selector" \
+		kubectl get pods -n kube-flannel -l "$flannel_selector" \
 			-o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.deletionTimestamp}{"\n"}{end}' |
 			awk '$2 == "" { print $1 }'
 	)
@@ -205,12 +205,12 @@ for _ in $(seq 1 24); do
 done
 
 if [ "$ready_flannel_pod_count" -ne "$expected_flannel_pod_count" ]; then
-	echo "Timed out waiting for all flannel pods to be recreated in kube-system"
+	echo "Timed out waiting for all flannel pods to be recreated in kube-flannel"
 	exit 1
 fi
 
-kubectl wait --namespace kube-system --for=jsonpath='{.status.phase}'=Running pod -l "$flannel_selector" --timeout=120s
-kubectl wait --namespace kube-system --for=condition=Ready pod -l "$flannel_selector" --timeout=120s
+kubectl wait --namespace kube-flannel --for=jsonpath='{.status.phase}'=Running pod -l "$flannel_selector" --timeout=120s
+kubectl wait --namespace kube-flannel --for=condition=Ready pod -l "$flannel_selector" --timeout=120s
 
 cleanup() {
 	status=$?
