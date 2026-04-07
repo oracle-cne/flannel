@@ -179,30 +179,38 @@ report_test_failure() {
 trap report_test_failure ERR
 
 test_started=true
+expected_flannel_pod_count=$(kubectl get pods -n kube-system -l "$flannel_selector" --no-headers 2>/dev/null | wc -l)
+
+if [ "$expected_flannel_pod_count" -eq 0 ]; then
+	echo "No flannel pods found in kube-system"
+	exit 1
+fi
+
 kubectl delete pod -n kube-system -l "$flannel_selector"
 
-flannel_pod=""
 for _ in $(seq 1 24); do
-	flannel_pod=$(
+	ready_flannel_pods=$(
 		kubectl get pods -n kube-system -l "$flannel_selector" \
 			-o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.deletionTimestamp}{"\n"}{end}' |
-			awk '$2 == "" { print $1; exit }'
+			awk '$2 == "" { print $1 }'
 	)
 
-	if [ -n "$flannel_pod" ]; then
+	ready_flannel_pod_count=$(printf '%s\n' "$ready_flannel_pods" | awk 'NF { count++ } END { print count + 0 }')
+
+	if [ "$ready_flannel_pod_count" -eq "$expected_flannel_pod_count" ]; then
 		break
 	fi
 
 	sleep 5
 done
 
-if [ -z "$flannel_pod" ]; then
-	echo "Timed out waiting for the flannel pod to be recreated in kube-system"
+if [ "$ready_flannel_pod_count" -ne "$expected_flannel_pod_count" ]; then
+	echo "Timed out waiting for all flannel pods to be recreated in kube-system"
 	exit 1
 fi
 
-kubectl wait --namespace kube-system --for=jsonpath='{.status.phase}'=Running "pod/${flannel_pod}" --timeout=120s
-kubectl wait --namespace kube-system --for=condition=Ready "pod/${flannel_pod}" --timeout=120s
+kubectl wait --namespace kube-system --for=jsonpath='{.status.phase}'=Running pod -l "$flannel_selector" --timeout=120s
+kubectl wait --namespace kube-system --for=condition=Ready pod -l "$flannel_selector" --timeout=120s
 
 cleanup() {
 	status=$?
