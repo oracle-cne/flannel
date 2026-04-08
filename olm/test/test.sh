@@ -3,6 +3,15 @@
 set -eE
 set -x
 
+ls -l /dev/stdin
+ls -l /proc/self/fd/0
+
+stat /dev/stdin
+stat /proc/self/fd/0
+
+stat -L /dev/stdin
+stat -L /proc/self/fd/0
+
 
 if ! which ocne; then
 	if [ -z "$FLANNEL_SKIP_INSTALL_DEPS" ]; then
