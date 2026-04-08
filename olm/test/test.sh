@@ -5,7 +5,7 @@ set -x
 
 
 if ! which ocne; then
-	if [ -z "$HEADLAMP_SKIP_INSTALL_DEPS" ]; then
+	if [ -z "$FLANNEL_SKIP_INSTALL_DEPS" ]; then
 		sudo dnf install -y ocne
 	else
 		echo "The ocne cli is required"
@@ -14,7 +14,7 @@ if ! which ocne; then
 fi
 
 if ! which podman; then
-	if [ -z "$HEADLAMP_SKIP_INSTALL_DEPS" ]; then
+	if [ -z "$FLANNEL_SKIP_INSTALL_DEPS" ]; then
 		sudo dnf install -y podman
 	else
 		echo "podman is required"
@@ -23,7 +23,7 @@ if ! which podman; then
 fi
 
 if ! which kubectl; then
-	if [ -z "$HEADLAMP_SKIP_INSTALL_DEPS" ]; then
+	if [ -z "$FLANNEL_SKIP_INSTALL_DEPS" ]; then
 		sudo dnf install -y kubectl
 	else
 		echo "kubectl is required"
@@ -32,7 +32,7 @@ if ! which kubectl; then
 fi
 
 if ! which git; then
-	if [ -z "$HEADLAMP_SKIP_INSTALL_DEPS" ]; then
+	if [ -z "$FLANNEL_SKIP_INSTALL_DEPS" ]; then
 		sudo dnf install -y git
 	else
 		echo "git is required"
@@ -43,7 +43,7 @@ fi
 git clone https://github.com/oracle-cne/tests ocne-tests
 
 if ! which virsh; then
-	if [ -z "$HEADLAMP_SKIP_INSTALL_DEPS" ]; then
+	if [ -z "$FLANNEL_SKIP_INSTALL_DEPS" ]; then
 		if [ -f /etc/os-release ]; then
 			os_id=$(sed -n 's/^ID=//p' /etc/os-release | tr -d '"')
 			os_version_id=$(sed -n 's/^VERSION_ID=//p' /etc/os-release | tr -d '"')
@@ -76,19 +76,73 @@ if ! which virsh; then
 	fi
 fi
 
-export HEADLAMP_CLUSTER_NAME=flannel-test
+export FLANNEL_CLUSTER_NAME=flannel-test
 export IMG_NAME="container-registry.oracle.com/olcne/flannel"
 export TAG="v0.28.1"
 export NGINX_IMG_NAME="container-registry.oracle.com/olcne/nginx"
+control_plane_node_count=3
+worker_node_count=3
+expected_cluster_node_count=$((control_plane_node_count + worker_node_count))
+cluster_node_wait_timeout_seconds="${CLUSTER_NODE_WAIT_TIMEOUT_SECONDS:-600}"
+cluster_node_wait_poll_seconds="${CLUSTER_NODE_WAIT_POLL_SECONDS:-10}"
 flannel_selector="app=flannel"
 delete_ocne_cluster=false
 test_started=false
 
+wait_for_cluster_nodes() {
+	local expected_node_count="$1"
+	local timeout_seconds="$2"
+	local poll_seconds="$3"
+	local deadline=$((SECONDS + timeout_seconds))
+	local current_node_count=0
+	local current_ready_node_count=0
+
+	echo "Waiting for ${expected_node_count} cluster nodes to register"
+
+	while [ "$SECONDS" -lt "$deadline" ]; do
+		if ! kubectl get nodes >/dev/null 2>&1; then
+			echo "Cluster API is not ready yet; retrying node discovery in ${poll_seconds}s"
+			sleep "$poll_seconds"
+			continue
+		fi
+
+		current_node_count=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)
+		current_ready_node_count=$(
+			kubectl get nodes --no-headers 2>/dev/null |
+				awk '$2 ~ /(^|,)Ready(,|$)/ { count++ } END { print count + 0 }'
+		)
+
+		echo "Discovered ${current_node_count}/${expected_node_count} nodes with ${current_ready_node_count}/${expected_node_count} Ready"
+
+		if [ "$current_node_count" -eq "$expected_node_count" ]; then
+			echo "All ${expected_node_count} nodes are registered; waiting for Ready condition"
+			if kubectl wait --for=condition=Ready nodes --all --timeout="${poll_seconds}s"; then
+				final_ready_node_count=$(
+					kubectl get nodes --no-headers 2>/dev/null |
+						awk '$2 ~ /(^|,)Ready(,|$)/ { count++ } END { print count + 0 }'
+				)
+
+				if [ "$final_ready_node_count" -eq "$expected_node_count" ]; then
+					echo "All ${expected_node_count} cluster nodes are online and Ready"
+					return 0
+				fi
+			fi
+		fi
+
+		sleep "$poll_seconds"
+	done
+
+	echo "Timed out after ${timeout_seconds}s waiting for ${expected_node_count} cluster nodes to come online"
+	kubectl get nodes -o wide || true
+	return 1
+}
+
 if [ -z "${KUBECONFIG:-}" ]; then
 	delete_ocne_cluster=true
-	ocne cluster start --auto-start-ui=false -C "$HEADLAMP_CLUSTER_NAME" --control-plane-nodes 3 --worker-nodes 3
+	ocne cluster start --auto-start-ui=false -C "$FLANNEL_CLUSTER_NAME" --control-plane-nodes "$control_plane_node_count" --worker-nodes "$worker_node_count"
 	export KUBECONFIG
-	KUBECONFIG=$(ocne cluster show -C "$HEADLAMP_CLUSTER_NAME")
+	KUBECONFIG=$(ocne cluster show -C "$FLANNEL_CLUSTER_NAME")
+	wait_for_cluster_nodes "$expected_cluster_node_count" "$cluster_node_wait_timeout_seconds" "$cluster_node_wait_poll_seconds"
 fi
 
 cluster_nodes=$(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
@@ -224,7 +278,7 @@ cleanup() {
 	rm -rf "$tmpdir"
 
 	if [ "$delete_ocne_cluster" = true ]; then
-		ocne cluster delete -C "${HEADLAMP_CLUSTER_NAME}" || status=$?
+		ocne cluster delete -C "${FLANNEL_CLUSTER_NAME}" || status=$?
 	fi
 
 	exit "$status"
