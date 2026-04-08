@@ -221,6 +221,8 @@ else
 	sed -i "1a NGINX_IMAGE=\"${NGINX_IMAGE}\"" "$ocne_basic_test_script"
 fi
 
+cat "${ocne_basic_test_script}"
+
 echo "Updated ${ocne_basic_test_script} to use ${NGINX_IMAGE}"
 
 report_test_failure() {
