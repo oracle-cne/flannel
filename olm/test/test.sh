@@ -199,8 +199,9 @@ if [ -z "$nginx_tag" ]; then
 	exit 1
 fi
 
-NGINX_IMAGE="${NGINX_IMG_NAME}:${nginx_tag}"
-echo "Using nginx image ${NGINX_IMAGE} for ocne-tests"
+# ocne-tests prepends its own registry/repository prefix, so only pass nginx:<tag>.
+NGINX_IMAGE="nginx:${nginx_tag}"
+echo "Using downstream nginx image override ${NGINX_IMAGE} for ocne-tests"
 
 ocne_basic_test_script=""
 for candidate in ocne-tests/tools/basic_k8s_tests.sh ocne-tests/tools/basic_k8s_test.sh; do
