@@ -1,0 +1,15 @@
+@Library('olcne-pipeline') _
+
+import com.oracle.olcne.pipeline.BranchPattern
+
+String version  = "0.28.4"
+String imageTag = "v" + version
+
+olcnePipeline(
+    branchPattern: new BranchPattern(master: "oracle/release/" + version, feature: '(?!^release/.*$)(^.*$)'),
+    containers: [('container-registry.oracle.com/olcne/flannel:' + imageTag): 'olcne/flannel:' + imageTag],
+    yumOL8Repos:['ol8_appstream', 'ol8_codeready_builder'],
+    yumOL9Repos:['ol9_appstream', 'ol9_codeready_builder'],
+    platforms: ['ol8', 'ol9'],
+    architectures: ['x86_64', 'aarch64'],
+)
