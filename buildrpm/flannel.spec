@@ -22,7 +22,7 @@
 
 Name:           flannel
 Version:        0.28.6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Etcd address management agent for overlay networks
 License:        ASL 2.0
 Group:          System/Management
@@ -78,5 +78,8 @@ install -d -m 0755 %{buildroot}/run/%{name}/
 
 
 %changelog
+* Fri Oct 09 2026 Oracle Cloud Native Environment Authors <noreply@oracle.com> - 0.28.6-2
+- Update vulnerable Go dependencies and rebuild the Flannel image
+
 * Mon Jul 06 2026 Oracle Cloud Native Environment Authors <noreply@oracle.com> - 0.28.6-1
 - Release of flannel-0.28.6-1

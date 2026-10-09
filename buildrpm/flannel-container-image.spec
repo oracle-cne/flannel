@@ -6,7 +6,7 @@
 
 Name:           %{_name}-container-image
 Version:        0.28.6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Flannel container image for Oracle Linux
 License:        ASL 2.0
 Group:          System/Management
@@ -23,7 +23,7 @@ Flannel container image for Oracle Linux
 %setup -q -n %{_name}-%{version}
 
 %global rpm_name %{_name}-%{version}-%{release}.%{_build_arch}
-%global docker_tag %{registry}/%{_name}:v%{version}
+%global docker_tag %{registry}/%{_name}:v%{version}-1
 
 %build
 docker info
@@ -50,5 +50,8 @@ install -p -D -m 644 %{_name}.tar %{buildroot}/usr/local/share/olcne/%{_name}.ta
 /usr/local/share/olcne/%{_name}.tar
 
 %changelog
+* Fri Oct 09 2026 Oracle Cloud Native Environment Authors <noreply@oracle.com> - 0.28.6-2
+- Update vulnerable Go dependencies and rebuild the Flannel image
+
 * Mon Jul 06 2026 Oracle Cloud Native Environment Authors <noreply@oracle.com> - 0.28.6-1
 - Release of flannel-container-image-0.28.6-1
