@@ -163,3 +163,6 @@ require (
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+// The cache module has no v3.7.2 tag; use the matching etcd release commit.
+replace go.etcd.io/etcd/cache/v3 v3.7.2 => go.etcd.io/etcd/cache/v3 v3.0.0-20260922210733-68c065e56299
