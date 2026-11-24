@@ -4,6 +4,9 @@ go 1.26.8
 
 // replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.2.0
 
+// The cache module has no v3.7.3 tag; use the matching etcd release commit.
+replace go.etcd.io/etcd/cache/v3 v3.7.3 => go.etcd.io/etcd/cache/v3 v3.0.0-20261022230134-0a173d0410a9
+
 require (
 	github.com/Microsoft/hcsshim v0.15.0
 	github.com/bronze1man/goStrongswanVici v0.0.0-20231128135937-211cef3b0b20
